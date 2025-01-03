@@ -45,20 +45,26 @@ for idx in range(4):
     mult = mult.at[:, idx].set(2**jnp.linspace(-jnp.log2(change), +jnp.log2(change), Nvary))
     pvar = mult * params[None,:]
     costs = jax.vmap(cost)(pvar)
-    plt.plot(mult, costs)
+    #plt.plot(mult, costs)
     print(bpos.converged)
+
     #plt.axvline(1 + bpos.root, color='black')
     #plt.axhline(mcost*1.1)
     #plt.axvline(1 - bneg.root, color='black')
+    rneg = params[idx]*(1-bneg.root)
+    rpos = params[idx]*(1+bpos.root)
     df.append(dict(
         #idx=idx,
         name=names[idx],
         val=params[idx],
         #eneg=params[idx]*bneg.root,
         #epos=params[idx]*bpos.root,
-        range_neg=params[idx]*(1-bneg.root),
-        range_pos=params[idx]*(1+bpos.root)
+        range_neg=rneg,
+        range_pos=rpos
         ))
+    if idx != 0:
+        plt.hlines(idx, -bneg.root*100, +bpos.root*100)
+        plt.text(0, idx, f'{names[idx]} {params[idx]:.2f} {rneg:.2f} {rpos:.2f}')
 
 df = pd.DataFrame(df)
 df.to_csv('./out/fit_du2015_to_ju2024_sensitivity.csv')
@@ -66,6 +72,8 @@ df.to_latex('./out/fit_du2015_to_ju2024_sensitivity.tex')
 
 print(df)
 #plt.axhline(mcost*1.1)
-#plt.ylim(0, mcost*2)
+#plt.xlim(0, 2)
+plt.axvline(1)
 
+plt.savefig('./out/fit_du2015_to_ju2024_sensitivity.svg')
 plt.show()

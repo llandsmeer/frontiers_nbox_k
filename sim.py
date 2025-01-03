@@ -13,11 +13,11 @@ from tqdm import tqdm
 period = 1.1
 
 def load_data():
-    pot = pd.read_csv('./A_Pot.csv', header=None, names=['pulsenum', 'conductance_muS'])
+    pot = pd.read_csv('data/A_Pot.csv', header=None, names=['pulsenum', 'conductance_muS'])
     pot.conductance_muS = 7 - pot.conductance_muS
     tpot = period * (pot.pulsenum-1)
     gpot = pot.conductance_muS
-    dec = pd.read_csv('./A_Dec.csv', header=None, names=['pulsenum', 'conductance_muS'])
+    dec = pd.read_csv('data/A_Dec.csv', header=None, names=['pulsenum', 'conductance_muS'])
     dec.conductance_muS = 7 - dec.conductance_muS
     tdec = period * (dec.pulsenum-1)
     gdec = dec.conductance_muS
@@ -45,7 +45,8 @@ def simulate(w0, A, tau, wmin, dt):
 def model(w0, tau, amp, wmin):
     dt = 0.01
     t  = jnp.arange(0, int(round(NREPEAT*period*100)), dt)
-    A = (t%(100*period) < 55) & (t % period < 1.)
+    #$A = (t%(100*period) < 55) & (t % period < 1.)
+    A = (t%(100*period) < 54) & (t % period < 1.)
     trace = simulate(w0, amp*A, tau, wmin, dt)
     return t[::10], trace[::10]
 
@@ -115,3 +116,5 @@ def fit_model_to_data():
     plt.savefig('out/fit_du2015_to_ju2024.svg')
     plt.show()
 
+if __name__ == '__main__':
+    fit_model_to_data()
