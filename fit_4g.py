@@ -10,6 +10,8 @@ Tpulse    = 1 # 1ms
 Tinterval = 1 # 1ms
 Npulse    = 10
 
+tau = 11.73
+
 @jax.custom_jvp
 def passthrough_clip(x: float | jax.Array, a, b):
     return jnp.clip(x, a, b)
@@ -49,13 +51,17 @@ def simulate(v, wmin, tau, lam, eta):
         # w' = lambda sinh(eta V) - (w - wmin) / tau
         # w' = (tau * lambda sinh(eta V) + wmin - w) / tau
         winf = tau * lam * jnp.sinh(eta * v) + wmin
-        w = winf + (w-winf) * jnp.exp(-Tpulse * tau)
+        w = winf + (w-winf) * jnp.exp(-Tpulse / tau)
         # w = passthrough_clip(w, 0., 1.) # XXX
         trace.append(w)
-        w = wmin + (w-wmin) * jnp.exp(-Tinterval * tau)
+        w = wmin + (w-wmin) * jnp.exp(-Tinterval / tau)
         trace.append(w)
     trace = jnp.array(trace)
     return trace
+
+def w_to_i(w, vread, alpha, beta, gamma, delta):
+    return (1-w) * alpha * (1-jnp.exp(-beta*vread)) + w * gamma * jnp.sinh(delta * vread)
+
 
 def pulseread(v, wmin, tau, lam, eta, alpha, gamma, beta, delta):
     wmin = passthrough_clip(wmin, 0., 1.)
@@ -65,21 +71,31 @@ def pulseread(v, wmin, tau, lam, eta, alpha, gamma, beta, delta):
     # return w * 150
     # vread = 0.7
     vread = v
-    i = (1-w) * alpha * (1-jnp.exp(-beta*vread)) + w * gamma * jnp.sinh(delta * vread)
+    # w = passthrough_clip(w, 0., 1.)
+    i = w_to_i(w, vread, alpha, beta, gamma, delta)
     return i, w
 
 @jax.jit
 def geti(v, params):
-    wmin, tau, lam, eta, alpha, gamma, beta, delta = params
+    wmin, lam, eta, alpha, gamma, beta = params
     delta = eta
     i, w = pulseread(v, wmin, tau, lam, eta, alpha, gamma, beta, delta)
     return i, w
 
 @jax.jit
 def score(params):
+    wmin, _, eta, alpha, gamma, beta = params
+    delta = eta
     i, w = jax.vmap(geti, in_axes=[0, None])(vs, params)
     score=((i - itgt)**2).mean()
-    score = score + 10 * (params[0]-0.2) ** 2 + 0.1 * (w * (w > 1)).sum() + (w[-1, -1]-.9)**2
+    score = score + 500 * (params[0]-0.2) ** 2 + 100 * (w * (w > 1)).sum()# + 0.01*(w[-1, -1]-.8)**2
+    # 4a constraints
+    G0_0_7V = 2.044595956802368
+    imodel07 = w_to_i(wmin, 0.7, alpha, beta, gamma, delta)
+    idata07 = G0_0_7V * 0.7
+    score = score + 1*(imodel07 - idata07) ** 2
+    score = score + 10000 * (jnp.abs(params) * (params < 0)).sum()
+    #jax.debug.print('{} {}', imodel07, idata07)
     return score
 
 @jax.jit
@@ -92,7 +108,7 @@ def update(params, opt_state):
 
 vs, itgt = load_data()
 
-params = .1 * jnp.ones(8)
+params = .1 * jnp.ones(6)
 learning_rate = 1e-3
 optimizer = optax.adam(learning_rate)
 opt_state = optimizer.init(params)
