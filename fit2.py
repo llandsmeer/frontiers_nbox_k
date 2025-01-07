@@ -50,7 +50,7 @@ def simulate(v, wmin, tau, lam, eta):
         # w' = (tau * lambda sinh(eta V) + wmin - w) / tau
         winf = tau * lam * jnp.sinh(eta * v) + wmin
         w = winf + (w-winf) * jnp.exp(-Tpulse * tau)
-        w = passthrough_clip(w, 0., 1.)
+        # w = passthrough_clip(w, 0., 1.) # XXX
         trace.append(w)
         w = wmin + (w-wmin) * jnp.exp(-Tinterval * tau)
         trace.append(w)
@@ -59,22 +59,27 @@ def simulate(v, wmin, tau, lam, eta):
 
 def pulseread(v, wmin, tau, lam, eta, alpha, gamma, beta, delta):
     wmin = passthrough_clip(wmin, 0., 1.)
+    # wmin = 0.2 # XXX
     w = simulate(v, wmin, tau, lam, eta)
     w = w[::2]
-    return w * 150
-    i = (1-w) * alpha * (1-jnp.exp(-beta*v)) + w * gamma * jnp.sinh(delta * v)
-    return i
+    # return w * 150
+    # vread = 0.7
+    vread = v
+    i = (1-w) * alpha * (1-jnp.exp(-beta*vread)) + w * gamma * jnp.sinh(delta * vread)
+    return i, w
 
 @jax.jit
 def geti(v, params):
     wmin, tau, lam, eta, alpha, gamma, beta, delta = params
-    i = pulseread(v, wmin, tau, lam, eta, alpha, gamma, beta, delta)
-    return i
+    delta = eta
+    i, w = pulseread(v, wmin, tau, lam, eta, alpha, gamma, beta, delta)
+    return i, w
 
 @jax.jit
 def score(params):
-    i = jax.vmap(geti, in_axes=[0, None])(vs, params)
+    i, w = jax.vmap(geti, in_axes=[0, None])(vs, params)
     score=((i - itgt)**2).mean()
+    score = score + 10 * (params[0]-0.2) ** 2 + 0.1 * (w * (w > 1)).sum() + (w[-1, -1]-.9)**2
     return score
 
 @jax.jit
@@ -93,14 +98,19 @@ optimizer = optax.adam(learning_rate)
 opt_state = optimizer.init(params)
 
 
-for i in tqdm.tqdm(range(10000)):
+for i in tqdm.tqdm(range(1000000)):
     cc, params, opt_state = update(params, opt_state)
-    if i % 100 == 0:
+    if i % 10000 == 0:
         print(params)
         print(cc)
 
-i = jax.vmap(geti, in_axes=[0, None])(vs, params)
+i, w = jax.vmap(geti, in_axes=[0, None])(vs, params)
+#breakpoint()
+#plt.show()
 plt.plot(i, color='black')
 plt.plot(itgt, color='red')
+plt.figure()
+plt.plot(w, color='black')
+#plt.figure()
 plt.show()
 
