@@ -88,13 +88,14 @@ def score(params):
     delta = eta
     i, w = jax.vmap(geti, in_axes=[0, None])(vs, params)
     score=((i - itgt)**2).mean()
-    score = score + 500 * (params[0]-0.2) ** 2 + 100 * (w * (w > 1)).sum()# + 0.01*(w[-1, -1]-.8)**2
+    score = score + 500 * (params[0]-0.1) ** 2 + 100 * (w * (w > 1)).sum()# + 0.01*(w[-1, -1]-.8)**2
     # 4a constraints
     G0_0_7V = 2.044595956802368
     imodel07 = w_to_i(wmin, 0.7, alpha, beta, gamma, delta)
     idata07 = G0_0_7V * 0.7
     score = score + 1*(imodel07 - idata07) ** 2
     score = score + 10000 * (jnp.abs(params) * (params < 0)).sum()
+    score = score + 1*(beta - 0.5) ** 2
     #jax.debug.print('{} {}', imodel07, idata07)
     return score
 
@@ -120,6 +121,10 @@ for i in tqdm.tqdm(range(1000000)):
         print(params)
         print(cc)
 
+
+for i, name in enumerate('wmin lam eta alpha gamma beta'.split()):
+    print(name.ljust(10), params[i])
+
 i, w = jax.vmap(geti, in_axes=[0, None])(vs, params)
 #breakpoint()
 #plt.show()
@@ -130,3 +135,19 @@ plt.plot(w, color='black')
 #plt.figure()
 plt.show()
 
+
+# wmin       0.12088428
+# lam        0.015229914
+# eta        0.74721617
+# delta      0.74721617
+# alpha      0.27990505
+# gamma      10.788141
+# beta       32.67252
+
+# alpha         1e-8        0.01
+# beta          0.5         0.5
+# gamma         1e-5        10
+# delta         4.0         4.0
+# lambda        1e-3        1e-3
+# eta           8.          8.
+# tau           0.05        0.05
