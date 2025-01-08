@@ -31,7 +31,7 @@ def load_data():
     vnames = sorted(list(set(df.columns.get_level_values(0))))
     Itgt = []
     vs = []
-    for vname in vnames:
+    for i, vname in enumerate(vnames):
         xy = df[vname].sort_values('X')
         x = xy.X.values
         y = xy.Y.values
@@ -39,6 +39,8 @@ def load_data():
         assert all(x.round() == np.arange(1, len(x)+1))
         Itgt.append(y)
         vs.append(float(vname.removeprefix('V-')))
+        if i > 3:
+            break
     vs = jnp.array(vs)
     itgt = jnp.array(Itgt)
     return vs, itgt
@@ -88,9 +90,9 @@ def score(params):
     delta = eta
     i, w = jax.vmap(geti, in_axes=[0, None])(vs, params)
     score=((i - itgt)**2).mean()
-    score = score + 500 * (params[0]-0.1) ** 2 + 100 * (w * (w > 1)).sum()# + 0.01*(w[-1, -1]-.8)**2
+    score = score + 1000 * (wmin-0.15) ** 2 + 100 * (w * (w > 1)).sum()# + 0.01*(w[-1, -1]-.8)**2
     # 4a constraints
-    G0_0_7V = 2.044595956802368
+    G0_0_7V = 2.18# 2.044595956802368
     imodel07 = w_to_i(wmin, 0.7, alpha, beta, gamma, delta)
     idata07 = G0_0_7V * 0.7
     score = score + 1*(imodel07 - idata07) ** 2
@@ -128,21 +130,27 @@ for i, name in enumerate('wmin lam eta alpha gamma beta'.split()):
 i, w = jax.vmap(geti, in_axes=[0, None])(vs, params)
 #breakpoint()
 #plt.show()
-plt.plot(i, color='black')
-plt.plot(itgt, color='red')
+plt.plot(i.T, color='black')
+plt.plot(itgt.T, color='red')
 plt.figure()
-plt.plot(w, color='black')
+plt.plot(w.T, color='black')
+np.savez('./out/fit_4g3',
+        i=i,
+        itgt=itgt,
+        w=w,
+        vs=vs,
+        ** {name:params[i] for i, name in enumerate('wmin lam eta alpha gamma beta'.split())},
+        params=params
+)
 #plt.figure()
 plt.show()
 
-
-# wmin       0.12088428
-# lam        0.015229914
-# eta        0.74721617
-# delta      0.74721617
-# alpha      0.27990505
-# gamma      10.788141
-# beta       32.67252
+# alpha                     0.027066028
+# beta                      0.5026478
+# gamma                    11.137796
+# wmin                      0.11677933
+# lam                       0.015500192
+# eta                       0.7393317
 
 # alpha         1e-8        0.01
 # beta          0.5         0.5
