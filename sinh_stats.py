@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open('./log.sinh2.db.pkl', 'rb') as f:
+with open('./4flog.db.pkl', 'rb') as f:
     data = pickle.load(f)
 
 out = data['out']
@@ -31,6 +31,6 @@ for k in range(4):
     ax[k].set_ylim(-1000, 0)
 
 
-plt.savefig('gridsearch_stats.svg')
+plt.savefig('4g_gridsearch_stats.svg')
 plt.show()
 
