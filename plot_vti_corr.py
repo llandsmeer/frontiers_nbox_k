@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open('./4flog.db.pkl', 'rb') as f:
+with open('./log.db.pkl', 'rb') as f:
     data = pickle.load(f)
 
 out = data['out']
@@ -24,6 +24,6 @@ plt.plot(transform(np.array([
 ])), color='red', zorder=10)
 
 #plt.ylim(-2, 2)
-plt.savefig('./4ggridsearch_stats_corr.svg')
+plt.savefig('./gridsearch_stats_corr.svg')
 plt.show()
 

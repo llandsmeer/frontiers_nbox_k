@@ -147,7 +147,7 @@ def fit():
         out.append(dict(scores=scores, configs=configs, idx=idx, best=best, r2=r2,
                 vscale=best[0], tscale=best[1], iscale=best[2], sinscale=best[3])
                    )
-        with open('./4flog.db.pkl', 'wb') as f:
+        with open('./log.db.pkl', 'wb') as f:
             pickle.dump(dict(
                 out=out,
                 V=V,
@@ -155,14 +155,14 @@ def fit():
                 ), f)
     plt.plot(Vbig, color='black', zorder=-1, lw=3)
     plt.xlim(1000, len(Vbig))
-    plt.savefig('fitpo4ft2.svg')
+    plt.savefig('fitpot2.svg')
     #plt.show()
     plt.figure()
     plt.plot(Vbig, color='black', zorder=-1, lw=3)
     score, r2, label, best, v = bestoverall
     plt.plot(v)
     plt.title(label)
-    plt.savefig('fitpot4f3.svg')
+    plt.savefig('fitpot3.svg')
     #plt.hist(scores, bins=100)
     #plt.show()
 
