@@ -160,7 +160,6 @@ def simmem(config, params: MemristorParams, tstop=TSTOP, return_all=False):
     state0 = v0, m0, h0, w, ou0
     _, trace = jax.lax.scan(f, state0, keys)
     return trace
-
 def main():
     V = simhh()
     v = simmem()
@@ -191,8 +190,8 @@ def fit(name: str, params: MemristorParams):
     plt.plot(V)
     trace = simmem(best.x, params=params, return_all=True)
     plt.plot(trace.v)
-    #np.savez(f'./out/{name}_hh_fit_results', V=V, config=best.x, score=best.f,
-    #    vscale=best.x[0], tscale=best.x[1], iscale=best.x[2], params=jnp.array(params), **trace._asdict())
+    np.savez(f'./out/{name}_hh_fit_results', V=V, config=best.x, score=best.f,
+        vscale=best.x[0], tscale=best.x[1], iscale=best.x[2], params=jnp.array(params), **trace._asdict())
     plt.show()
 
 def fit_both():
