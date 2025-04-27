@@ -131,4 +131,5 @@ best = jnp.array([vscale, tscale, iscale])
 
 trace = simmem(params=CONFIG_NBOX, ncomparts=30)
 plt.plot(jnp.arange(len(trace)) * dt, trace)
+plt.savefig('./out/circuit.svg')
 plt.show()
