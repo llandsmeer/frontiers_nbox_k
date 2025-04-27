@@ -1,0 +1,9 @@
+cma==4.0.0
+jax==0.6.0
+jaxlib==0.6.0
+matplotlib==3.10.1
+numpy==1.26.4
+optax==0.2.4
+pandas==2.2.3
+scipy==1.15.2
+tqdm==4.67.1
