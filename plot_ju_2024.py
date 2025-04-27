@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import jax.numpy as jnp
-import fit_du2015_to_ju2024
+import sim
 
-t, g = fit_du2015_to_ju2024.load_data()
+t, g = sim.load_data()
 plt.plot(t, g, 'o')
 
 period = 1.1
