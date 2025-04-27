@@ -134,24 +134,7 @@ i, w = jax.vmap(geti, in_axes=[0, None])(vs, params)
 #plt.show()
 plt.plot(i.T, color='black')
 plt.plot(itgt.T, color='red')
+plt.savefig('out/fit4g.svg')
 plt.figure()
 plt.plot(w.T, color='black')
 #plt.figure()
-plt.show()
-
-
-# wmin       0.12088428
-# lam        0.015229914
-# eta        0.74721617
-# delta      0.74721617
-# alpha      0.27990505
-# gamma      10.788141
-# beta       32.67252
-
-# alpha         1e-8        0.01
-# beta          0.5         0.5
-# gamma         1e-5        10
-# delta         4.0         4.0
-# lambda        1e-3        1e-3
-# eta           8.          8.
-# tau           0.05        0.05

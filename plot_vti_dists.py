@@ -2,7 +2,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-with open('./log.sinh2.db.pkl', 'rb') as f:
+with open('./log.db.pkl', 'rb') as f:
     data = pickle.load(f)
 
 out = data['out']
@@ -32,5 +32,5 @@ for k in range(4):
 
 
 plt.savefig('gridsearch_stats.svg')
-plt.show()
+#plt.show()
 
