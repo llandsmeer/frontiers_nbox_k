@@ -9,21 +9,22 @@ out = data['out']
 
 transform = lambda x: x
 
+best = None
 for i, block in enumerate(out):
     scores = block['scores']
     configs = block['configs']
-    m = scores < 100
-    plt.plot(transform(configs[m,:3]).T, color='blue', zorder=1)
-    m2 = ~m & (scores < 150)
-    plt.plot(transform(configs[m2,:3]).T, color='green', zorder=-1)
+    idxbest = scores.argmin()
+    if best is None or scores[idxbest] < best[0]:
+        best = scores[idxbest], configs[idxbest]
+    m = scores < 150
+    plt.plot(transform(configs[m]).T, color='blue', zorder=1)
+    m2 = ~m & (scores < 200)
+    plt.plot(transform(configs[m2]).T, color='green', zorder=-1)
 
-plt.plot(transform(np.array([
-    0.14385128,
-    0.214236,
-    0.194107,
-])), color='red', zorder=10)
+if best is not None:
+    plt.plot(transform(best[1]), color='red', zorder=10)
 
 #plt.ylim(-2, 2)
 plt.savefig('./gridsearch_stats_corr.svg')
-plt.show()
+#plt.show()
 

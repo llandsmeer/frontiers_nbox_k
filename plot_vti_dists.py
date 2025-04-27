@@ -32,5 +32,5 @@ for k in range(4):
 
 
 plt.savefig('gridsearch_stats.svg')
-plt.show()
+#plt.show()
 

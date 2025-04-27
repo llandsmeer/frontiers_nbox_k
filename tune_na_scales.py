@@ -14,6 +14,10 @@ lam                   =   0.015500192
 eta                   =   0.7393317
 delta                 =   0.7393317
 
+vscale = 0.14385128
+tscale = 0.214236
+iscale = 0.19410
+
 jax.config.update("jax_enable_x64", True)
 
 def exprelr(x): return jnp.where(jnp.isclose(x, 0), 1., x / jnp.expm1(x))
@@ -26,11 +30,9 @@ def beta_n(V):  return 0.125*jnp.exp(-0.0125*V - 0.8125)
 
 TSTOP = 200
 
-dt = 0.005
-SKIP = 1000 * 5
-
 @functools.partial(jax.jit, static_argnames=['tstop'])
 def simhh(tstop=TSTOP):
+    dt = 0.025
     v0 = -60
     ou0   =  0.0
     C_m   =   1.0 ;
@@ -65,29 +67,11 @@ def simhh(tstop=TSTOP):
     _, trace = jax.lax.scan(f, state0, keys)
     return trace
 
-@jax.jit
-def isolve(w, v, Rser):
-    iest = 0
-    def f(iest, _):
-        vr = iest * Rser
-        vmem = v - vr
-        i = ((1-w) * alpha * (1-jnp.exp(-beta*vmem)) + w * gamma * jnp.sinh(delta * vmem))
-        iest = iest * 0.8 + i * 0.2
-        return iest, None
-    iest, trace = jax.lax.scan(f, 0, length=20)
-    #jax.debug.print('{} {}', iest, trace[-1])
-    return iest
-
-
 @functools.partial(jax.jit, static_argnames=['tstop'])
 def simmem(config, tstop=TSTOP):
-    # vscale = 2.9e-4
-    # tscale = 2.(9
-    # iscale = .5
+    vscale2, tscale2, iscale2 = config
 
-    vscale, tscale, iscale, rser = config
-    rser = rser / 1000
-
+    dt = 0.025
     v0 = -60
     ou0   =  0.0
     C_m   =   1.0 ;
@@ -96,9 +80,10 @@ def simmem(config, tstop=TSTOP):
     theta = 0.1   ; sigma = 0.7
     m0 = alpha_m(v0) / (alpha_m(v0) + beta_m(v0))
     h0 = alpha_h(v0) / (alpha_h(v0) + beta_h(v0))
-    w = wmin
     tau = 11.03
-    # tau = tau * tscale
+    tau = tau * tscale
+    w = wmin
+    w2 = wmin
     nsteps = int(round(tstop / dt))
     keys = jax.random.split(jax.random.PRNGKey(0), nsteps)
     def f(state, key):
@@ -107,13 +92,10 @@ def simmem(config, tstop=TSTOP):
         dh_dt = alpha_h(v)*(1-h) - beta_h(v)*h
 
         vmem = vscale*(v - E_K)
-
-        #I_K = iscale * ((1-w) * alpha * (1-jnp.exp(-beta*vmem)) + w * gamma * jnp.sinh(delta * vmem))
-        I_K = iscale * isolve(w, vmem, rser)
-
+        I_K = iscale * ((1-w) * alpha * (1-jnp.exp(-beta*vmem)) + w * gamma * jnp.sinh(delta * vmem))
         # I_K = w*(v - E_K)*iscale
-        wnext = w + dt * ( lam * jnp.sinh(eta * vmem) - (w - wmin) / tau) / tscale
-        # wnext = (wnext > 1) * 1 + (wnext < 1) * wnext
+        wnext = w + dt * ( lam * jnp.sinh(eta * vmem) - (w - wmin) / tau)
+        w2next = w + dt * ( lam * jnp.sinh(eta * vmem) - (w - wmin) / tau)
 
         I_Na = g_Na*m**3*h*(v - E_Na)
         I_L = g_L*(v - E_L)
@@ -131,7 +113,6 @@ def simmem(config, tstop=TSTOP):
     _, trace = jax.lax.scan(f, state0, keys)
     return trace
 
-
 def main():
     V = simhh()
     v = simmem()
@@ -140,43 +121,31 @@ def main():
 
 def fit():
     V = simhh()
-    Vbig = simhh(tstop=200)
+    Vbig = simhh(tstop=1000)
     bestoverall = None
     out = []
-    for i in tqdm.tqdm(range(10000)):
+    for i in tqdm.tqdm(range(1000)):
         key = jax.random.PRNGKey(i)
-        configs = (10**jax.random.uniform(key=key, shape=(5000, 4), minval=-3, maxval=3))
+        configs = (10**jax.random.uniform(key=key, shape=(5000, 3), minval=-2, maxval=2))
         vv = jax.vmap(simmem)(configs)
-        scores = ((jnp.abs(vv[:,SKIP:] - V[None,SKIP:]))**2).mean(1)
+        scores = ((jnp.abs(vv - V[None,:]))**2).mean(1)
         m = scores == scores
         scores, configs = scores[m], configs[m]
         idx = scores.argmin()
         best = configs[idx]
         #print(scores[idx])
         #print(best)
-        v = simmem(best, tstop=200)
-        vscale, tscale, iscale, rser = best
-        _, _, r_value, _, _ = scipy.stats.linregress(Vbig[SKIP:], v[SKIP:])
+        v = simmem(best, tstop=1000)
+        vscale, tscale, iscale, sinscale = best
+        _, _, r_value, _, _ = scipy.stats.linregress(Vbig[1000:], v[1000:])
         r2 = r_value**2
         if bestoverall is None or bestoverall[0] > scores[idx]:
-            bestoverall = scores[idx], r2, f'vscale={vscale} tscale={tscale} iscale={iscale} rser={rser} R^2={r2}', best, v
-        if scores[idx] < 250:# or i%10 == 0:
-            plt.plot(v, label=f'vscale={vscale} tscale={tscale} iscale={iscale} rser={rser} R^2={r2}', alpha=0.5)
-        if i%10 == 0:
-            print('score =', scores[idx])
-            print('vscale =', vscale)
-            print('tscale =', tscale)
-            print('iscale =', iscale)
-            print('rser =', rser)
+            bestoverall = scores[idx], r2, f'vscale={vscale} tscale={tscale} iscale={iscale} sinscale={sinscale} R^2={r2}', best, v
+        if scores[idx] < 200:
+            plt.plot(v, label=f'vscale={vscale} tscale={tscale} iscale={iscale} sinscale={sinscale} R^2={r2}', alpha=0.5)
             print('R^2 =', r2)
-            #plt.plot(Vbig, color='black', zorder=-1, lw=3)
-            #plt.plot(v, color='red', zorder=1, lw=1)
-            #plt.show()
         out.append(dict(scores=scores, configs=configs, idx=idx, best=best, r2=r2,
-                vscale=best[0], tscale=best[1], iscale=best[2],
-                v=v
-                )
-                   )
+                vscale=best[0], tscale=best[1], iscale=best[2]))
         with open('./log.db.pkl', 'wb') as f:
             pickle.dump(dict(
                 out=out,
