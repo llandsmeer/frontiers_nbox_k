@@ -5,6 +5,7 @@ os.environ['CUDA_AVAILABLE_DEVICES'] = ''
 import jax
 jax.config.update('jax_default_device', jax.devices('cpu')[0])
 
+import scipy.stats
 import jax.numpy as jnp
 import tqdm
 import numpy as np
@@ -211,13 +212,20 @@ def fit(name: str, params: MemristorParams, save=True, plot=False, seed=None):
             ''')
     if plot:
         plt.show()
-    else:
-        plt.savefig(fn, dpi=300)
-        plt.savefig(fn.replace('.png', '.svg'))
+    #else:
+        #plt.savefig(fn, dpi=300)
+        #plt.savefig(fn.replace('.png', '.svg'))
+    ##
+    Vbig = simhh(TSTOP*6)
+    vbig = simmem(best.x, tstop=TSTOP*6, params=params, return_all=False)
+    skip = int(round(TSTOP / dt))
+    _, _, r_value, _, _ = scipy.stats.linregress(Vbig[skip:], vbig[skip:])
+    r2 = r_value**2
+    print(name, r2)
 
 def fit_both():
-    fit('wox',  CONFIG_WOX,  plot=True, save=True, seed=592095)
-    fit('nbox', CONFIG_NBOX, plot=True, save=True, seed=507062)
+    fit('wox',  CONFIG_WOX,  plot=True, save=False, seed=592095)
+    fit('nbox', CONFIG_NBOX, plot=True, save=False, seed=507062)
 
 if __name__ == '__main__':
     fit_both()

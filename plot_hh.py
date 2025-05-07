@@ -8,7 +8,7 @@ plt.rcParams['svg.fonttype'] = 'none'
 nbox = np.load('./out/nbox_hh_fit_results.npz')
 wox  = np.load('./out/wox_hh_fit_results.npz')
 
-dt = 0.025
+dt = 0.005
 l = len(nbox['V'])
 
 N = l // 4*3
@@ -33,7 +33,8 @@ plt.axhline(E_K)
 plt.axhline(E_Na)
 plt.axhline(E_L)
 
-plt.text(0, 0, f'NbOx {100 * nbox["tscale"]:.1f}ms\nWOx {100 * wox["tscale"]:.1f}ms')
+plt.text(0, 0, f'NbOx {100 / nbox["tscale"]:.1f}ms\nWOx {100 / wox["tscale"]:.1f}ms')
+print(f'NbOx {100 / nbox["tscale"]:.1f}ms\nWOx {100 / wox["tscale"]:.1f}ms')
 plt.ylim(-80, 60)
 
 plt.legend()
@@ -59,29 +60,34 @@ ee = []
 ee2 = []
 text = ''
 for name, trace, prom in [('nbox', nbox, 1e-9), ('wox', wox, 1e-10)]:
+    print(' == ', name, '==')
     pwr, pwrfull = power(trace)
-    Ekall = np.trapz(pwr, dx=dt *trace['tscale'])
+    print('TIME', len(pwr)*dt)
+    Ekall = np.trapz(pwr, dx=dt /trace['tscale'])
     #plt.plot(pwr)
-    Efull = np.trapz(pwrfull, dx=dt *trace['tscale'])
+    Efull = np.trapz(pwrfull, dx=dt /trace['tscale'])
     pwr = pwr[N:]
     pwrfull = pwrfull[N:]
     text = text + f'{name} K {Ekall*1e9:.1f} nW\n'
     text = text + f'{name} All {Efull*1e6:.3f} uW\n'
+    print('full k', f'{name} K {Ekall*1e9:.1f} nW {Ekall*1e9/51:.1f} nJ {Ekall*86e9:.1f}')
+    print('full a', f'{name} All {Efull*1e6:.3f} uW {Efull*1e6/51:.3f} uJ {Efull*86e9:.3f}')
     peaks, _ = scipy.signal.find_peaks(-pwr, distance=100, prominence=prom)
     peaks = np.concatenate([[0], peaks, [-1]])
     es = []
     es2 = []
     for a, b in zip(peaks[:-1], peaks[1:]):
         #plt.plot(pwr[a:b])
-        E = np.trapz(pwr[a:b], dx=dt *trace['tscale'])
+        #plt.show()
+        E = np.trapz(pwr[a:b], dx=dt /trace['tscale'])
         es.append(E)
-        E = np.trapz(pwrfull[a:b], dx=dt *trace['tscale'])
+        E = np.trapz(pwrfull[a:b], dx=dt /trace['tscale'])
         es2.append(E)
     ee.append(es)
     print(name)
-    print(np.mean(es), np.std(es), len(es))
+    print('subset k', np.mean(es)*1e9, np.std(es)*1e9, len(es))
     ee2.append(es2)
-    print(np.mean(es2), np.std(es2), len(es2))
+    print('subset a', np.mean(es2)*1e9, np.std(es2)*1e9, len(es2))
 
 
 #plt.show()
