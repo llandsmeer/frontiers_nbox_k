@@ -33,7 +33,7 @@ plt.axhline(E_K)
 plt.axhline(E_Na)
 plt.axhline(E_L)
 
-plt.text(0, 0, f'NbOx {100 * nbox["tscale"]:.1f}ms\nWOx {100 * wox["vscale"]:.1f}ms')
+plt.text(0, 0, f'NbOx {100 * nbox["tscale"]:.1f}ms\nWOx {100 * wox["tscale"]:.1f}ms')
 plt.ylim(-80, 60)
 
 plt.legend()
@@ -61,6 +61,7 @@ text = ''
 for name, trace, prom in [('nbox', nbox, 1e-9), ('wox', wox, 1e-10)]:
     pwr, pwrfull = power(trace)
     Ekall = np.trapz(pwr, dx=dt *trace['tscale'])
+    #plt.plot(pwr)
     Efull = np.trapz(pwrfull, dx=dt *trace['tscale'])
     pwr = pwr[N:]
     pwrfull = pwrfull[N:]
@@ -81,9 +82,13 @@ for name, trace, prom in [('nbox', nbox, 1e-9), ('wox', wox, 1e-10)]:
     print(np.mean(es), np.std(es), len(es))
     ee2.append(es2)
     print(np.mean(es2), np.std(es2), len(es2))
+
+
+#plt.show()
+
 plt.boxplot(ee)
 plt.xticks([1,2], ['nbox', 'wox'])
-plt.ylim(-.1e-9, 2.1e-9)
+#plt.ylim(-.1e-9, 2.1e-9)
 plt.text(1.5, 1e-9, text)
 plt.plot([.8, .8], [0, 2e-9], color='black', lw=3)
 plt.plot([.7, .8], [2e-9, 2e-9], color='black', lw=3)
@@ -96,7 +101,7 @@ plt.clf()
 
 plt.boxplot(ee2)
 plt.xticks([1,2], ['nbox', 'wox'])
-plt.ylim(1.9e-9, 6.1e-9)
+#plt.ylim(1.9e-9, 6.1e-9)
 plt.text(1.5, 1e-9, text)
 plt.plot([.8, .8], [2e-9, 6e-9], color='black', lw=3)
 plt.plot([.7, .8], [6e-9, 6e-9], color='black', lw=3)
@@ -108,11 +113,11 @@ plt.savefig('out/allperspike.svg')
 plt.clf()
 
 
-vmem = 10
+# vmem = 10
 
-window_W = 1 - jnp.exp(w*3)/jnp.exp(3)
-params = fit_hh.CONFIG_NBOX
-wnext = w + window_W * dt * ( params.lam * jnp.sinh(params.eta * vmem) - (params.w - params.wmin) / params.tau) / tscale
+# window_W = 1 - jnp.exp(w*3)/jnp.exp(3)
+# params = fit_hh.CONFIG_NBOX
+# wnext = w + window_W * dt * ( params.lam * jnp.sinh(params.eta * vmem) - (params.w - params.wmin) / params.tau) / tscale
 #window_W = 1 - jnp.exp(w*3)/jnp.exp(3)
 #tau_bar = tau / window_W
 #winf = tau_bar * lam * jnp.sinh(eta * v) + wmin

@@ -167,7 +167,7 @@ def main():
     plt.plot(V, v)
     plt.show()
 
-def fit(name: str, params: MemristorParams, save=True, plot=False):
+def fit(name: str, params: MemristorParams, save=True, plot=False, seed=None):
     V = simhh()
     @jax.jit
     def get_scores(vv):
@@ -176,8 +176,10 @@ def fit(name: str, params: MemristorParams, save=True, plot=False):
         return scores
     best = cma.optimization_tools.BestSolution()
     run_sims = jax.jit(jax.vmap(jax.jit(functools.partial(simmem, params=params))))
-    optimizer = cma.CMAEvolutionStrategy(0.2*np.ones(3), .5,
-        {'bounds': [0.001, 1000], 'popsize': 10 })
+    config ={'bounds': [0.001, 1000], 'popsize': 10 } 
+    if seed is not None:
+        config['seed'] = seed
+    optimizer = cma.CMAEvolutionStrategy(0.2*np.ones(3), .5, config)
     bar = tqdm.tqdm(range(100))
     for _ in bar:
         configs = optimizer.ask()
@@ -214,10 +216,8 @@ def fit(name: str, params: MemristorParams, save=True, plot=False):
         plt.savefig(fn.replace('.png', '.svg'))
 
 def fit_both():
-    for _ in range(100):
-        # fit('wox', CONFIG_WOX, save=True)
-        fit('nbox', CONFIG_NBOX, save=False)
-
+    fit('wox',  CONFIG_WOX,  plot=True, save=True, seed=592095)
+    fit('nbox', CONFIG_NBOX, plot=True, save=True, seed=507062)
 
 if __name__ == '__main__':
     fit_both()
