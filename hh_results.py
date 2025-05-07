@@ -1,2 +1,0 @@
-nbox_hh_fit_results.npz
-wox_hh_fit_results.npz

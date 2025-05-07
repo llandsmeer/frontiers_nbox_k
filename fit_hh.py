@@ -1,8 +1,9 @@
 import os
 
-#os.environ['CUDA_AVAILABLE_DEVICES'] = ''
-#import jax
-#jax.config.update('jax_default_device', jax.devices('cpu')[0])
+os.environ['CUDA_AVAILABLE_DEVICES'] = ''
+#os.environ['CUDA_AVAILABLE_DEVICES'] = '1'
+import jax
+jax.config.update('jax_default_device', jax.devices('cpu')[0])
 
 import jax.numpy as jnp
 import tqdm
@@ -166,7 +167,7 @@ def main():
     plt.plot(V, v)
     plt.show()
 
-def fit(name: str, params: MemristorParams):
+def fit(name: str, params: MemristorParams, save=True, plot=False):
     V = simhh()
     @jax.jit
     def get_scores(vv):
@@ -174,7 +175,7 @@ def fit(name: str, params: MemristorParams):
         scores = 0.5 * ((jnp.abs(vv[:,SKIP:] - V[None,SKIP:]))**3).mean(1) + scores
         return scores
     best = cma.optimization_tools.BestSolution()
-    run_sims = jax.vmap(jax.jit(functools.partial(simmem, params=params)))
+    run_sims = jax.jit(jax.vmap(jax.jit(functools.partial(simmem, params=params))))
     optimizer = cma.CMAEvolutionStrategy(0.2*np.ones(3), .5,
         {'bounds': [0.001, 1000], 'popsize': 10 })
     bar = tqdm.tqdm(range(100))
@@ -190,13 +191,32 @@ def fit(name: str, params: MemristorParams):
     plt.plot(V)
     trace = simmem(best.x, params=params, return_all=True)
     plt.plot(trace.v)
-    np.savez(f'./out/{name}_hh_fit_results', V=V, config=best.x, score=best.f,
-        vscale=best.x[0], tscale=best.x[1], iscale=best.x[2], params=jnp.array(params), **trace._asdict())
-    plt.show()
+    if save:
+        np.savez(f'./out/{name}_hh_fit_results', V=V, config=best.x, score=best.f,
+            vscale=best.x[0], tscale=best.x[1], iscale=best.x[2], params=jnp.array(params), **trace._asdict())
+    i = 0
+    while True:
+        fn = f'img/{name}_{i}.png'
+        i += 1
+        if not os.path.exists(fn):
+            break
+    if best is not None:
+        print(f'''
+            score={best.f},
+            vscale={best.x[0]}
+            tscale={best.x[1]}
+            iscale={best.x[2]}
+            ''')
+    if plot:
+        plt.show()
+    else:
+        plt.savefig(fn, dpi=300)
+        plt.savefig(fn.replace('.png', '.svg'))
 
 def fit_both():
-    fit('nbox', CONFIG_NBOX)
-    fit('wox', CONFIG_WOX)
+    for _ in range(100):
+        # fit('wox', CONFIG_WOX, save=True)
+        fit('nbox', CONFIG_NBOX, save=False)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import jax.numpy as jnp
-import sim
+import fit_ju_2024 as sim
 
 t, g = sim.load_data()
 plt.plot(t, g, 'o')

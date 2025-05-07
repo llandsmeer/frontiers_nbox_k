@@ -32,6 +32,18 @@ CONFIG_NBOX = MemristorParams(
     tau     =  11.03
 )
 
+CONFIG_WOX = MemristorParams(
+    # Du 2017 supplement table 1
+    alpha   =  1e-8 * 1e6,
+    beta    =  0.5,
+    gamma   =  1e-5 * 1e6,
+    wmin    =  0.1,
+    lam     =  1e-3,
+    eta     =  8.0,
+    delta   =  4.0,
+    tau     = 50
+    )
+
 class FullTrace(typing.NamedTuple):
     v: float
     m: float
@@ -121,15 +133,31 @@ def simmem(params: MemristorParams, tstop=TSTOP, ncomparts=1):
     _, trace = jax.lax.scan(f, init, keys)
     return trace
 
-params = CONFIG_NBOX
-
-iscale=1.91
-tscale=1.26
-vscale=0.11
+if 1:
+    params = CONFIG_NBOX
+    vscale=0.11
+    tscale=1.26
+    iscale=1.91
+else:
+    params = CONFIG_WOX
+    tscale=0.186
+    vscale=0.013
+    iscale=6.317
 
 best = jnp.array([vscale, tscale, iscale])
 
-trace = simmem(params=CONFIG_NBOX, ncomparts=30)
-plt.plot(jnp.arange(len(trace)) * dt, trace)
-plt.savefig('./out/circuit.svg')
+cmap = plt.get_cmap('RdBu')
+trace = simmem(params=params, ncomparts=30)
+for i in range(30):
+    plt.plot(jnp.arange(len(trace)) * dt, -i + trace[:,i], color=cmap(0.1+0.9*(i/29)),label=f'comp{i}')
+plt.xlim(70, 250)
+plt.legend()
+# plt.savefig('./out/circuit.svg')
 plt.show()
+
+# (5_w,10)-aCMA-ES (mu_w=3.2,w_1=45%) in dimension 3 (seed=592095, Mon May  5 14:01:17 2025)
+# 100%|██████████████████| 100/100 [01:04<00:00,  1.56it/s, i=6.32, s=3.75e+3, t=0.186, v=0.0131]
+#             score=3752.687685030218,
+#             vscale=0.013061788087031106
+#             tscale=0.18595913291576718
+#             iscale=6.316548044931718
