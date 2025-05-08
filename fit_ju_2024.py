@@ -59,7 +59,7 @@ def cost(params):
 NREPEAT = 10
 T, G = load_data_repeat(NREPEAT)
 
-def fit_model_to_data():
+def fit_model_to_data(save=True):
     initial_guess = jnp.array([2.0, 20.0, 2.0, 2.5])
     initial_guess = jnp.array([2.52, 18.8, 0.22, 1.73])
     initial_guess = jnp.array([1.0, 1.0, 1.0, 1.])
@@ -88,22 +88,26 @@ def fit_model_to_data():
 
     plt.plot(ls)
     plt.xlabel('Iteration')
-    plt.savefig('out/fit_du2015_to_ju2024_loss.svg')
+    if save:
+        plt.savefig('out/fit_du2015_to_ju2024_loss.svg')
     plt.yscale('log')
-    plt.savefig('out/fit_du2015_to_ju2024_loss_logscale.svg')
+    if save:
+        plt.savefig('out/fit_du2015_to_ju2024_loss_logscale.svg')
     plt.show()
+    plt.figure()
 
     print("Optimized parameters:", params)
 
     w0, tau, amp, wmin = params
 
-    with open('out/fit_du2015_to_ju2024.json', 'w') as f:
-        json.dump(dict(
-            w0=float(w0),
-            tau=float(tau),
-            amp=float(amp),
-            wmin=float(wmin),
-            ), f)
+    if save:
+        with open('out/fit_du2015_to_ju2024.json', 'w') as f:
+            json.dump(dict(
+                w0=float(w0),
+                tau=float(tau),
+                amp=float(amp),
+                wmin=float(wmin),
+                ), f)
 
     t, g = model(w0, tau, amp, wmin)
 
@@ -113,7 +117,8 @@ def fit_model_to_data():
     plt.ylabel("G")
     plt.legend()
     plt.title("Optimized vs Observed")
-    plt.savefig('out/fit_du2015_to_ju2024.svg')
+    if save:
+        plt.savefig('out/fit_du2015_to_ju2024.svg')
     plt.show()
 
 if __name__ == '__main__':

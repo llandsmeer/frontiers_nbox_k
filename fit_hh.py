@@ -224,8 +224,8 @@ def fit(name: str, params: MemristorParams, save=True, plot=False, seed=None):
     print(name, r2)
 
 def fit_both():
-    fit('wox',  CONFIG_WOX,  plot=True, save=False, seed=592095)
-    fit('nbox', CONFIG_NBOX, plot=True, save=False, seed=507062)
+    fit('wox',  CONFIG_WOX,  plot=0, save=False, seed=592095)
+    fit('nbox', CONFIG_NBOX, plot=0, save=False, seed=507062)
 
 if __name__ == '__main__':
     fit_both()

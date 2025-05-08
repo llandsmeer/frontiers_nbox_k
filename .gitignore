@@ -4,3 +4,4 @@ __pycache__
 *.npz
 ng/img/
 removeme/
+.ipynb_checkpoints/
